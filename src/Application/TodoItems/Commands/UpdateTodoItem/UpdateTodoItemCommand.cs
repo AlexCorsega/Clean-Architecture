@@ -2,6 +2,7 @@
 using Todo_App.Application.Common.Exceptions;
 using Todo_App.Application.Common.Interfaces;
 using Todo_App.Domain.Entities;
+using Todo_App.Domain.ValueObjects;
 
 namespace Todo_App.Application.TodoItems.Commands.UpdateTodoItem;
 
@@ -35,7 +36,6 @@ public class UpdateTodoItemCommandHandler : IRequestHandler<UpdateTodoItemComman
 
         entity.Title = request.Title;
         entity.Done = request.Done;
-
         await _context.SaveChangesAsync(cancellationToken);
 
         return Unit.Value;

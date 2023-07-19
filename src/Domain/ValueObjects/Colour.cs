@@ -17,16 +17,18 @@ public class Colour : ValueObject
 
     public static Colour From(string code)
     {
-        var colour = new Colour { Code = code };
-
-        if (!SupportedColours.Contains(colour))
+        if (!IsValid(code))
         {
             throw new UnsupportedColourException(code);
         }
 
-        return colour;
+        return new Colour(code);
     }
-
+    public static bool IsValid(string code)
+    {
+        var colour = new Colour { Code = code };
+        return SupportedColours.Contains(colour);
+    }
     public static Colour White => new("#FFFFFF");
 
     public static Colour Red => new("#FF5733");
@@ -35,7 +37,7 @@ public class Colour : ValueObject
 
     public static Colour Yellow => new("#FFFF66");
 
-    public static Colour Green => new("#CCFF99 ");
+    public static Colour Green => new("#CCFF99");
 
     public static Colour Blue => new("#6666FF");
 

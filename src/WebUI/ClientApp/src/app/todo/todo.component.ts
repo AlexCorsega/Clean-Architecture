@@ -32,15 +32,18 @@ export class TodoComponent implements OnInit {
     id: [null],
     listId: [null],
     priority: [''],
-    note: ['']
+    note: [''],
+    colour:['']
   });
+  colours = ['#FFFFFF', '#FF5733', '#FFC300', '#FFFF66', '#CCFF99', '#6666FF', '#9966CC', '#999999'];
+
 
 
   constructor(
     private listsClient: TodoListsClient,
     private itemsClient: TodoItemsClient,
     private modalService: BsModalService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
   ) { }
 
   ngOnInit(): void {
@@ -148,6 +151,7 @@ export class TodoComponent implements OnInit {
 
   updateItemDetails(): void {
     const item = new UpdateTodoItemDetailCommand(this.itemDetailsFormGroup.value);
+    this.selectedItem.colour = item.colour;
     this.itemsClient.updateItemDetails(this.selectedItem.id, item).subscribe(
       () => {
         if (this.selectedItem.listId !== item.listId) {
