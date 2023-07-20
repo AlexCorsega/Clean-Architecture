@@ -5,8 +5,11 @@ import {
   TodoListsClient, TodoItemsClient,
   TodoListDto, TodoItemDto, PriorityLevelDto,
   CreateTodoListCommand, UpdateTodoListCommand,
-  CreateTodoItemCommand, UpdateTodoItemDetailCommand
+  CreateTodoItemCommand, UpdateTodoItemDetailCommand, UpdateBackgroundTodoItemCommand
 } from '../web-api-client';
+import { AuthorizeService } from '../../api-authorization/authorize.service';
+import { tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-todo-component',
@@ -14,6 +17,7 @@ import {
   styleUrls: ['./todo.component.scss']
 })
 export class TodoComponent implements OnInit {
+  public isAuthenticated?: Observable<boolean>;
   debug = false;
   deleting = false;
   deleteCountDown = 0;
@@ -33,7 +37,10 @@ export class TodoComponent implements OnInit {
     listId: [null],
     priority: [''],
     note: [''],
-    colour:['']
+  });
+  changeBackgroundFormGroup = this.fbBg.group({
+    id:[null],
+    colour:[''],
   });
   colours = ['#FFFFFF', '#FF5733', '#FFC300', '#FFFF66', '#CCFF99', '#6666FF', '#9966CC', '#999999'];
 
@@ -44,9 +51,13 @@ export class TodoComponent implements OnInit {
     private itemsClient: TodoItemsClient,
     private modalService: BsModalService,
     private fb: FormBuilder,
+    private fbBg: FormBuilder,
+    private authorizeService: AuthorizeService
   ) { }
 
   ngOnInit(): void {
+    this.isAuthenticated = this.authorizeService.isAuthenticated();
+
     this.listsClient.get().subscribe(
       result => {
         this.lists = result.lists;
@@ -148,10 +159,15 @@ export class TodoComponent implements OnInit {
         this.stopDeleteCountDown();
     });
   }
-
+  updateItemBackground(itemDTO: TodoItemDto): void {
+    this.changeBackgroundFormGroup.get('id').setValue(itemDTO.id);
+    const item = new UpdateBackgroundTodoItemCommand(this.changeBackgroundFormGroup.value);
+    this.itemsClient.updateItemBackground(itemDTO.id, item).subscribe(() => {
+      itemDTO.colour = item.colour;
+    }, error => alert(error));
+  }
   updateItemDetails(): void {
     const item = new UpdateTodoItemDetailCommand(this.itemDetailsFormGroup.value);
-    this.selectedItem.colour = item.colour;
     this.itemsClient.updateItemDetails(this.selectedItem.id, item).subscribe(
       () => {
         if (this.selectedItem.listId !== item.listId) {

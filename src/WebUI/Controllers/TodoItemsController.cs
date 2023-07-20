@@ -2,6 +2,7 @@
 using Todo_App.Application.Common.Models;
 using Todo_App.Application.TodoItems.Commands.CreateTodoItem;
 using Todo_App.Application.TodoItems.Commands.DeleteTodoItem;
+using Todo_App.Application.TodoItems.Commands.UpdateBackgroundTodoItem;
 using Todo_App.Application.TodoItems.Commands.UpdateTodoItem;
 using Todo_App.Application.TodoItems.Commands.UpdateTodoItemDetail;
 using Todo_App.Application.TodoItems.Queries.GetTodoItemsWithPagination;
@@ -37,6 +38,18 @@ public class TodoItemsController : ApiControllerBase
 
     [HttpPut("[action]")]
     public async Task<ActionResult> UpdateItemDetails(int id, UpdateTodoItemDetailCommand command)
+    {
+        if (id != command.Id)
+        {
+            return BadRequest();
+        }
+
+        await Mediator.Send(command);
+
+        return NoContent();
+    }
+    [HttpPut("[action]")]
+    public async Task<ActionResult> UpdateItemBackground(int id, UpdateBackgroundTodoItemCommand command)
     {
         if (id != command.Id)
         {
