@@ -5,7 +5,7 @@ import {
   TodoListsClient, TodoItemsClient,
   TodoListDto, TodoItemDto, PriorityLevelDto,
   CreateTodoListCommand, UpdateTodoListCommand,
-  CreateTodoItemCommand, UpdateTodoItemDetailCommand, UpdateBackgroundTodoItemCommand
+  CreateTodoItemCommand, UpdateTodoItemDetailCommand, UpdateBackgroundTodoItemCommand, TagClient, CreateTodoItemTagCommand, TagDto
 } from '../web-api-client';
 import { AuthorizeService } from '../../api-authorization/authorize.service';
 import { tap } from 'rxjs/operators';
@@ -32,12 +32,15 @@ export class TodoComponent implements OnInit {
   listOptionsModalRef: BsModalRef;
   deleteListModalRef: BsModalRef;
   itemDetailsModalRef: BsModalRef;
+  addTagModalRef: BsModalRef;
   itemDetailsFormGroup = this.fb.group({
     id: [null],
     listId: [null],
     priority: [''],
     note: [''],
   });
+  //My  object defined properties
+  newTagEditor: any = {};
   changeBackgroundFormGroup = this.fbBg.group({
     id:[null],
     colour:[''],
@@ -49,6 +52,7 @@ export class TodoComponent implements OnInit {
   constructor(
     private listsClient: TodoListsClient,
     private itemsClient: TodoItemsClient,
+    private tagsClient: TagClient,
     private modalService: BsModalService,
     private fb: FormBuilder,
     private fbBg: FormBuilder,
@@ -159,6 +163,7 @@ export class TodoComponent implements OnInit {
         this.stopDeleteCountDown();
     });
   }
+  //My Methods
   updateItemBackground(itemDTO: TodoItemDto): void {
     this.changeBackgroundFormGroup.get('id').setValue(itemDTO.id);
     const item = new UpdateBackgroundTodoItemCommand(this.changeBackgroundFormGroup.value);
@@ -166,6 +171,49 @@ export class TodoComponent implements OnInit {
       itemDTO.colour = item.colour;
     }, error => alert(error));
   }
+  //Show the add tag modal
+  showAddTagModal(template: TemplateRef<any>, item: TodoItemDto): void {
+    console.log(item);
+    this.selectedItem = item;
+    this.addTagModalRef = this.modalService.show(template);
+    this.addTagModalRef.onHidden.subscribe(() => {
+      this.newTagEditor.name = "";
+    });
+  }
+  //Add the Tag
+  addTag() {
+    const tag = {
+      id: 0,
+      todoItemId: this.selectedItem.id,
+      name: this.newTagEditor.name,
+    } as TagDto;
+
+    this.tagsClient.create(tag as CreateTodoItemTagCommand).subscribe(
+      result => {
+        tag.id = result;
+        this.selectedItem.tags.push(tag);
+        this.addTagModalRef.hide();
+        this.newTagEditor = {};
+      },
+      error => {
+        const errors = JSON.parse(error.response);
+
+        if (errors && errors.Title) {
+          this.newTagEditor.error = errors.Title[0];
+        }
+
+        setTimeout(() => document.getElementById('tagName').focus(), 250);
+      }
+    );
+  }
+
+  //Remove the tag
+  deleteTag(tagId: number, item: TodoItemDto): void {
+    this.tagsClient.delete(tagId).subscribe(() => {
+      item.tags = item.tags.filter(t => t.id != tagId);
+    }, error => alert(error));
+  }
+  //End of My Methods
   updateItemDetails(): void {
     const item = new UpdateTodoItemDetailCommand(this.itemDetailsFormGroup.value);
     this.itemsClient.updateItemDetails(this.selectedItem.id, item).subscribe(

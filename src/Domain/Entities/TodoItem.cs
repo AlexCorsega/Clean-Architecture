@@ -29,5 +29,5 @@ public class TodoItem : BaseAuditableEntity
     public bool IsDeleted { get; set; }
     public Colour BackgroundColour { get; set; } = Colour.White;
     public TodoList List { get; set; } = null!;
-    public List<Tag> Tags { get; set; }
+    public List<Tag> Tags { get; set; } = new List<Tag>();
 }

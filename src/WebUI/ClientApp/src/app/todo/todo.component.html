@@ -1,10 +1,11 @@
 <h1>Todo</h1>
 
 <p>This is a complex todo list component.</p>
-
+<a *ngIf="(isAuthenticated | async) !== true" class="fs-3" [routerLink]='["/authentication/login"]'>Login First to see features</a>
 <p *ngIf="!lists"><em>Loading...</em></p>
 
-<div *ngIf="lists">
+
+<div *ngIf="lists" class="mt-2">
     <div class="row">
         <div class="col-sm-4">
             <div class="clearfix">
@@ -43,7 +44,7 @@
                         <div class="todo-item-checkbox">
                             <input type="checkbox" [(ngModel)]="item.done" (change)="updateItem(item)" />
                         </div>
-                        <div class="flex-fill">
+                        <div class="flex-fill position-relative">
                             <input id="{{ 'itemTitle' + i }}" *ngIf="item == selectedItem" type="text"
                                    class="form-control item-input-control" [(ngModel)]="item.title" (keyup.enter)="updateItem(item, true)"
                                    (blur)="updateItem(item)" autofocus="autofocus" />
@@ -51,11 +52,23 @@
                                  (click)="editItem(item, 'itemTitle' + i)" class="form-control item-input-control">
                                 <span>{{ item.title }}</span>
                             </div>
+                            <div id="tag-container" class="position-absolute">
+                                <div class="d-flex">
+                                    <div *ngFor="let tag of item.tags">
+                                        <button class="btn btn-default"><i class="bi bi-x" (click)="deleteTag(tag.id,item)"></i></button>
+                                        <span class="bg-dark text-white px-1">{{tag.name}}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="todo-item-commands d-flex">
                             <button *ngIf="item.id != 0" (click)="showItemDetailsModal(itemDetailsModalTemplate, item)"
                                     class="btn btn-default me-2 btn-xs" role="button">
                                 <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <button *ngIf="item.id != 0" (click)="showAddTagModal(addTagModalTemplate,item)"
+                                    class="btn btn-default me-2 btn-xs" role="button">
+                                <i class="bi bi-tags"></i>
                             </button>
                             <!-- *ngIf="isAuthenticated | async" -->
                             <form [formGroup]="changeBackgroundFormGroup" class="form" *ngIf="isAuthenticated | async">
@@ -77,6 +90,27 @@
 <div *ngIf="debug">
     <pre>{{ lists | json }}</pre>
 </div>
+<ng-template #addTagModalTemplate>
+    <div class="modal-header">
+        <h4 class="modal-title pull-left text-center">Add Tag</h4>
+        <button type="button" class="close btn-close pull-right" aria-label="Close" (click)="addTagModalRef.hide()">
+            <span aria-hidden="true" class="visually-hidden">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="form-group">
+            <label for="tagName">Name</label>
+            <input type="text" class="form-control" id="tagName" placeholder="Tag name..." [(ngModel)]="newTagEditor.name"
+                   [ngClass]="{ 'is-invalid': newTagEditor.error }" (keyup.enter)="addTag()" />
+        </div>
+    </div>
+    <div class="modal-footer">
+        <div class="text-center">
+        <button class="btn btn-success" (click)="addTag()">Add</button>
+        </div>
+    </div>
+
+</ng-template>
 
 <ng-template #listOptionsModalTemplate>
     <div class="modal-header">
