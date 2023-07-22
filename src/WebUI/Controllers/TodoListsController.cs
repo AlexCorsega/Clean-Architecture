@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Todo_App.Application.TodoItems.Commands.SoftDeleteTodoItem;
 using Todo_App.Application.TodoLists.Commands.CreateTodoList;
 using Todo_App.Application.TodoLists.Commands.DeleteTodoList;
+using Todo_App.Application.TodoLists.Commands.SoftDeleteTodoList;
 using Todo_App.Application.TodoLists.Commands.UpdateTodoList;
 using Todo_App.Application.TodoLists.Queries.ExportTodos;
 using Todo_App.Application.TodoLists.Queries.GetTodos;
@@ -12,7 +14,8 @@ public class TodoListsController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<TodosVm>> Get()
     {
-        return await Mediator.Send(new GetTodosQuery());
+        var result = await Mediator.Send(new GetTodosQuery());
+        return result;
     }
 
     [HttpGet("{id}")]
@@ -46,7 +49,11 @@ public class TodoListsController : ApiControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
     {
-        await Mediator.Send(new DeleteTodoListCommand(id));
+        //actual Delete
+        //await Mediator.Send(new DeleteTodoListCommand(id));
+
+        //implementation of soft delete
+        await Mediator.Send(new SoftDeleteTodoListCommand(id));
 
         return NoContent();
     }

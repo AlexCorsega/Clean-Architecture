@@ -18,6 +18,7 @@ public class TodoItemDto : IMapFrom<TodoItem>
 
     public string? Note { get; set; }
     public string? Colour { get; set; }
+    public bool IsDeleted { get; set; }
     public IList<TagDto> Tags { get; set; }
 
 
@@ -27,5 +28,6 @@ public class TodoItemDto : IMapFrom<TodoItem>
             .ForMember(d => d.Priority, opt => opt.MapFrom(s => (int)s.Priority));
         profile.CreateMap<TodoItem, TodoItemDto>()
            .ForMember(d => d.Colour, opt => opt.MapFrom(s => s.BackgroundColour));
+      
     }
 }

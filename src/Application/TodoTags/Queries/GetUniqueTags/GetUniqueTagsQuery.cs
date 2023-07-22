@@ -21,7 +21,7 @@ public class GetUniqueTagsQueryHandler : IRequestHandler<GetUniqueTagsQuery, Lis
     public async Task<List<TagBriefDto>> Handle(GetUniqueTagsQuery request, CancellationToken cancellationToken)
     {
         var result = (from s in _dbContext.Tags
-                 .Where(t => t.TodoItem.ListId.Equals(request.TodoListId))
+                 .Where(t => t.TodoItem.ListId.Equals(request.TodoListId) && !t.TodoItem.IsDeleted)
                     select s).GroupBy(t => t.Name).Select(t => _mapper.Map<TagBriefDto>(t.First()))
                     .ToList();
         return result;

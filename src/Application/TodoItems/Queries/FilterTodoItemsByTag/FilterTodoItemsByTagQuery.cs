@@ -27,13 +27,13 @@ public class FilterTodoItemsByTagQueryHandler : IRequestHandler<FilterTodoItemsB
         {
             return (await _context.TodoItems
           .Include(s => s.Tags)
-          .Where(s=>s.ListId.Equals(request.ListId))
+          .Where(s=>s.ListId.Equals(request.ListId) && !s.IsDeleted)
           .ProjectToListAsync<TodoItemDto>(_mapper.ConfigurationProvider));
         }
 
         return (await _context.TodoItems
             .Include(s => s.Tags)
-            .Where(s => s.ListId.Equals(request.ListId))
+            .Where(s => s.ListId.Equals(request.ListId) && !s.IsDeleted)
             .Where(x => x.Tags.Any(t => t.Name.Equals(request.Name)))
             .ProjectToListAsync<TodoItemDto>(_mapper.ConfigurationProvider));
     }

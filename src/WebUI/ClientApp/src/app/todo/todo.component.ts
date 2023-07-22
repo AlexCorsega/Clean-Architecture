@@ -8,8 +8,9 @@ import {
   CreateTodoItemCommand, UpdateTodoItemDetailCommand, UpdateBackgroundTodoItemCommand, TagClient, CreateTagCommand, TagDto, TagBriefDto
 } from '../web-api-client';
 import { AuthorizeService } from '../../api-authorization/authorize.service';
-import { tap } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { debounceTime, distinctUntilChanged, tap } from 'rxjs/operators';
+import { Observable, Subject } from 'rxjs';
+import { Debounce } from 'lodash-decorators';
 
 @Component({
   selector: 'app-todo-component',
@@ -18,7 +19,7 @@ import { Observable } from 'rxjs';
 })
 export class TodoComponent implements OnInit {
   //View Child
-  @ViewChild('mostUsedTagsModalTemplate') addTagModalTemplate: TemplateRef<any>;
+  @ViewChild('mostUsedTagsModalTemplate') mostUsedTagsModalTemplate: TemplateRef<any>;
 
   public isAuthenticated?: Observable<boolean>;
   debug = false;
@@ -55,8 +56,8 @@ export class TodoComponent implements OnInit {
     colour: [''],
   });
   selectedTag = "all";
+  searchedTitle = '';
   colours = ['#FFFFFF', '#FF5733', '#FFC300', '#FFFF66', '#CCFF99', '#6666FF', '#9966CC', '#999999'];
-
 
 
   constructor(
@@ -69,30 +70,29 @@ export class TodoComponent implements OnInit {
     private tagFilterFB: FormBuilder,
     private authorizeService: AuthorizeService
   ) { }
-
-   ngOnInit(): void {
+  ngOnInit(): void {
     //MY ADDED CODE
     let isUserAuthenticated = false;
     this.isAuthenticated = this.authorizeService.isAuthenticated();
-     this.isAuthenticated.subscribe(s => {
-       if (!s) {
-         document.addEventListener('keydown', (ev) => {
-           if (ev.ctrlKey && ev.key == 'k') {
-             ev.preventDefault();
-             this.showMostUsedTagsModal();
-           }
-         });
-       }
+    this.isAuthenticated.subscribe(s => {
+      isUserAuthenticated = s;
     });
- 
-
     this.listsClient.get().subscribe(
       result => {
+        if (isUserAuthenticated) {
+          document.addEventListener('keydown', (ev) => {
+            if (ev.ctrlKey && ev.key == 'k') {
+              ev.preventDefault();
+              this.showMostUsedTagsModal();
+            }
+          });
+        }
         this.lists = result.lists;
         this.priorityLevels = result.priorityLevels;
         if (this.lists.length) {
           this.selectedList = this.lists[0];
-          this.getUniqeTags(this.selectedList);
+          if (isUserAuthenticated)
+            this.getUniqeTags(this.selectedList);
         }
       },
       error => console.error(error)
@@ -189,7 +189,14 @@ export class TodoComponent implements OnInit {
     });
   }
   //MY METHODS
-
+  //Search for todo item
+  searchTodoItem() {
+    if (this.isAuthenticated) {
+      this.itemsClient.search(this.searchedTitle, this.selectedList.id).subscribe(success => {
+      this.selectedList.items = success;
+    }, errorResponse => alert(errorResponse) );
+    }
+  }
   //Select current list
   selectList(list: TodoListDto) {
     this.selectedList = list;
@@ -219,7 +226,10 @@ export class TodoComponent implements OnInit {
     }, errorResponse => {
 
     });
-    this.mostUsedTagsModalRef = this.modalService.show(this.addTagModalTemplate);
+    this.mostUsedTagsModalRef = this.modalService.show(this.mostUsedTagsModalTemplate);
+  }
+  closeMostUsedTagsModal(): void {
+    this.mostUsedTagsModalRef.hide();
   }
   showAddTagModal(template: TemplateRef<any>, item: TodoItemDto): void {
     this.selectedItem = item;
@@ -239,7 +249,8 @@ export class TodoComponent implements OnInit {
     this.tagsClient.create(tag as CreateTagCommand).subscribe(
       result => {
         tag.id = result;
-        this.uniqueListTags.push(new TagBriefDto({ id: tag.id, name: tag.name }));
+        const uniqueListToAdd = new TagBriefDto({ id: tag.id, name: tag.name })
+        { this.uniqueListTags.filter(t => t.name == tag.name).length == 0 && this.uniqueListTags.push(tag); }
         this.selectedItem.tags.push(tag);
         this.addTagModalRef.hide();
         this.newTagEditor = {};
@@ -266,13 +277,12 @@ export class TodoComponent implements OnInit {
   deleteTag(tagId: number, item: TodoItemDto): void {
     this.tagsClient.delete(tagId).subscribe(() => {
       item.tags = item.tags.filter(t => t.id != tagId);
+      this.getUniqeTags(this.selectedList);
     }, error => alert(error));
   }
   //Filter the tag
   filterTag(): void {
-    console.log(this.selectedTag);
     this.itemsClient.filterTodoItemsByTag(this.selectedTag, this.selectedList.id).subscribe(result => {
-      console.log(result);
       this.selectedList.items = result;
     }, error => alert(error));
   }
@@ -378,10 +388,13 @@ export class TodoComponent implements OnInit {
       this.selectedList.items.splice(itemIndex, 1);
     } else {
       this.itemsClient.delete(item.id).subscribe(
-        () =>
-        (this.selectedList.items = this.selectedList.items.filter(
-          t => t.id !== item.id
-        )),
+        () => {
+
+          this.getUniqeTags(this.selectedList);
+          (this.selectedList.items = this.selectedList.items.filter(
+            t => t.id !== item.id
+          ))
+        },
         error => console.error(error)
       );
     }

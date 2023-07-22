@@ -22,7 +22,7 @@ public class GetMostUsedTagsQueryHandler : IRequestHandler<GetMostUsedTagsQuery,
     public async Task<List<TagBriefDto>> Handle(GetMostUsedTagsQuery request, CancellationToken cancellationToken)
     {
         var result = (from s in _dbContext.Tags
-                      .Where(s=>s.CreatedBy == _userService.UserId)
+                      .Where(s=>s.CreatedBy == _userService.UserId && !s.TodoItem.IsDeleted)
                       .GroupBy(s => s.Name)
                       .OrderByDescending(s => s.Count())
                       .Select(s => s.First())

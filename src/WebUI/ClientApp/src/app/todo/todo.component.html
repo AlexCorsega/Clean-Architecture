@@ -34,24 +34,21 @@
             <div class="d-flex justify-content-between mb-2">
                 <h2 >{{ selectedList.title }}</h2>
                 <div *ngIf="(isAuthenticated | async)">
-
                     <select id="uniqueTags" class="form-select w-25" (change)="filterTag()" [(ngModel)]="selectedTag">
-                        <option value="all" default>All Tags</option>
-                        <option [ngValue]="tag.name" *ngFor="let tag of uniqueListTags">{{tag.name}}</option>
+                        <option value="all" default selected>All Tags</option>
+                        <option value="{{tag.name}}" *ngFor="let tag of uniqueListTags">{{tag.name}}</option>
                     </select>
                 </div>
-             <!--    <form [formGroup]="tagFilterFormGroup">
-                </form> -->
                 <button id="listOptions" class="btn btn-default" title="List Options..."
                         (click)="showListOptionsModal(listOptionsModalTemplate)">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
 
             </div>
-            <!-- Later updated when confirmed search for the todo items -->
-          <!--   <div class="text-end mb-2">
-                <input class="form-control" type="search" placeholder="Search Todo Item"/>
-            </div> -->
+            <!-- Search title -->
+            <div class="text-end mb-2" *ngIf="(isAuthenticated | async)">
+                <input class="form-control" type="search" placeholder="Search Todo Item" [(ngModel)]="searchedTitle" (keyup)="searchTodoItem()" />
+            </div>
             <ul id="todo-items" class="list-group mb-2">
                 <li class="list-group-item" *ngFor="let item of selectedList.items; index as i" [style.background]="item.colour">
                     <div class="d-flex">
@@ -62,8 +59,8 @@
                             <input id="{{ 'itemTitle' + i }}" *ngIf="item == selectedItem" type="text"
                                    class="form-control item-input-control" [(ngModel)]="item.title" (keyup.enter)="updateItem(item, true)"
                                    (blur)="updateItem(item)" autofocus="autofocus" />
-                            <div class="todo-item-title" *ngIf="item != selectedItem" [ngClass]="{ 'done-todo': item.done }"
-                                 (click)="editItem(item, 'itemTitle' + i)" class="form-control item-input-control">
+                            <div *ngIf="item != selectedItem" [ngClass]="{ 'done-todo': item.done }"
+                                 (click)="editItem(item, 'itemTitle' + i)" class="form-control item-input-control todo-item-title">
                                 <span>{{ item.title }}</span>
                             </div>
                             <!-- REMOVE TAG  -->
@@ -109,7 +106,7 @@
 <ng-template #mostUsedTagsModalTemplate>
     <div class="modal-header">
         <h4 class="modal-title pull-left text-center">Your Most Used Tags</h4>
-        <button type="button" class="close btn-close pull-right" aria-label="Close" (click)="mostUsedTagsModalRef.hide()">
+        <button type="button" class="close btn-close pull-right" aria-label="Close" (click)="closeMostUsedTagsModal()">
             <span aria-hidden="true" class="visually-hidden">&times;</span>
         </button>
     </div>
@@ -120,7 +117,7 @@
     </div>
     <div class="modal-footer">
         <div>
-            <button class="btn btn-secondary" (click)="mostUsedTagsModalRef.hide()">Close</button>
+            <button class="btn btn-secondary" (click)="closeMostUsedTagsModal()">Close</button>
         </div>
     </div>
 </ng-template>
