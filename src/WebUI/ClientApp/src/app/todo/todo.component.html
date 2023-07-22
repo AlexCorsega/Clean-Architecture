@@ -2,6 +2,7 @@
 
 <p>This is a complex todo list component.</p>
 <a *ngIf="(isAuthenticated | async) !== true" class="fs-3" [routerLink]='["/authentication/login"]'>Login First to see features</a>
+<p *ngIf="(isAuthenticated | async)"><i>Press <kbd class="fs-6">ctrl + k</kbd> to view most used tags</i></p>
 <p *ngIf="!lists"><em>Loading...</em></p>
 
 
@@ -17,7 +18,7 @@
             </div>
             <ul class="list-group">
                 <li *ngFor="let list of lists; index as i" class="list-group-item"
-                    [ngClass]="{ 'active': selectedList == list }" (click)="selectedList = list">
+                    [ngClass]="{ 'active': selectedList == list }" (click)="selectList(list)">
                     <div class="clearfix">
                         <div class="float-start">
                             {{ list.title }}
@@ -30,14 +31,27 @@
             </ul>
         </div>
         <div class="col-sm-8" *ngIf="selectedList">
-            <div class="clearfix">
-                <h2 class="float-start">{{ selectedList.title }}</h2>
-                <button id="listOptions" class="btn btn-default float-end" title="List Options..."
+            <div class="d-flex justify-content-between mb-2">
+                <h2 >{{ selectedList.title }}</h2>
+                <div *ngIf="(isAuthenticated | async)">
+
+                    <select id="uniqueTags" class="form-select w-25" (change)="filterTag()" [(ngModel)]="selectedTag">
+                        <option value="all" default>All Tags</option>
+                        <option [ngValue]="tag.name" *ngFor="let tag of uniqueListTags">{{tag.name}}</option>
+                    </select>
+                </div>
+             <!--    <form [formGroup]="tagFilterFormGroup">
+                </form> -->
+                <button id="listOptions" class="btn btn-default" title="List Options..."
                         (click)="showListOptionsModal(listOptionsModalTemplate)">
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
 
             </div>
+            <!-- Later updated when confirmed search for the todo items -->
+          <!--   <div class="text-end mb-2">
+                <input class="form-control" type="search" placeholder="Search Todo Item"/>
+            </div> -->
             <ul id="todo-items" class="list-group mb-2">
                 <li class="list-group-item" *ngFor="let item of selectedList.items; index as i" [style.background]="item.colour">
                     <div class="d-flex">
@@ -52,7 +66,8 @@
                                  (click)="editItem(item, 'itemTitle' + i)" class="form-control item-input-control">
                                 <span>{{ item.title }}</span>
                             </div>
-                            <div id="tag-container" class="position-absolute">
+                            <!-- REMOVE TAG  -->
+                            <div *ngIf="isAuthenticated|async" id="tag-container" class="position-absolute">
                                 <div class="d-flex">
                                     <div *ngFor="let tag of item.tags">
                                         <button class="btn btn-default"><i class="bi bi-x" (click)="deleteTag(tag.id,item)"></i></button>
@@ -66,7 +81,8 @@
                                     class="btn btn-default me-2 btn-xs" role="button">
                                 <i class="bi bi-three-dots-vertical"></i>
                             </button>
-                            <button *ngIf="item.id != 0" (click)="showAddTagModal(addTagModalTemplate,item)"
+                            <!-- ADD TAG BUTTON -->
+                            <button *ngIf="item.id != 0 && (isAuthenticated|async)" (click)="showAddTagModal(addTagModalTemplate,item)"
                                     class="btn btn-default me-2 btn-xs" role="button">
                                 <i class="bi bi-tags"></i>
                             </button>
@@ -90,6 +106,24 @@
 <div *ngIf="debug">
     <pre>{{ lists | json }}</pre>
 </div>
+<ng-template #mostUsedTagsModalTemplate>
+    <div class="modal-header">
+        <h4 class="modal-title pull-left text-center">Most Used Tags</h4>
+        <button type="button" class="close btn-close pull-right" aria-label="Close" (click)="mostUsedTagsModalRef.hide()">
+            <span aria-hidden="true" class="visually-hidden">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="form-group" *ngFor="let tag of mostUsedTags;index as i">
+          <p><b>{{i + 1}}.</b> {{tag.name}}</p>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <div>
+            <button class="btn btn-secondary" (click)="mostUsedTagsModalRef.hide()">Close</button>
+        </div>
+    </div>
+</ng-template>
 <ng-template #addTagModalTemplate>
     <div class="modal-header">
         <h4 class="modal-title pull-left text-center">Add Tag</h4>
@@ -102,6 +136,7 @@
             <label for="tagName">Name</label>
             <input type="text" class="form-control" id="tagName" placeholder="Tag name..." [(ngModel)]="newTagEditor.name"
                    [ngClass]="{ 'is-invalid': newTagEditor.error }" (keyup.enter)="addTag()" />
+            <span class="text-danger">{{newTagEditor.error}}</span>
         </div>
     </div>
     <div class="modal-footer">
@@ -109,7 +144,6 @@
         <button class="btn btn-success" (click)="addTag()">Add</button>
         </div>
     </div>
-
 </ng-template>
 
 <ng-template #listOptionsModalTemplate>

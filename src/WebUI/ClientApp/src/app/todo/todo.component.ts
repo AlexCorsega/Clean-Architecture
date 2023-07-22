@@ -1,11 +1,11 @@
-import { Component, TemplateRef, OnInit } from '@angular/core';
+import { Component, TemplateRef, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import {
   TodoListsClient, TodoItemsClient,
   TodoListDto, TodoItemDto, PriorityLevelDto,
   CreateTodoListCommand, UpdateTodoListCommand,
-  CreateTodoItemCommand, UpdateTodoItemDetailCommand, UpdateBackgroundTodoItemCommand, TagClient, CreateTodoItemTagCommand, TagDto
+  CreateTodoItemCommand, UpdateTodoItemDetailCommand, UpdateBackgroundTodoItemCommand, TagClient, CreateTagCommand, TagDto, TagBriefDto
 } from '../web-api-client';
 import { AuthorizeService } from '../../api-authorization/authorize.service';
 import { tap } from 'rxjs/operators';
@@ -17,6 +17,9 @@ import { Observable } from 'rxjs';
   styleUrls: ['./todo.component.scss']
 })
 export class TodoComponent implements OnInit {
+  //View Child
+  @ViewChild('mostUsedTagsModalTemplate') addTagModalTemplate: TemplateRef<any>;
+
   public isAuthenticated?: Observable<boolean>;
   debug = false;
   deleting = false;
@@ -26,6 +29,7 @@ export class TodoComponent implements OnInit {
   priorityLevels: PriorityLevelDto[];
   selectedList: TodoListDto;
   selectedItem: TodoItemDto;
+  uniqueListTags: TagBriefDto[];
   newListEditor: any = {};
   listOptionsEditor: any = {};
   newListModalRef: BsModalRef;
@@ -33,6 +37,7 @@ export class TodoComponent implements OnInit {
   deleteListModalRef: BsModalRef;
   itemDetailsModalRef: BsModalRef;
   addTagModalRef: BsModalRef;
+  mostUsedTagsModalRef: BsModalRef;
   itemDetailsFormGroup = this.fb.group({
     id: [null],
     listId: [null],
@@ -40,11 +45,16 @@ export class TodoComponent implements OnInit {
     note: [''],
   });
   //My  object defined properties
+  mostUsedTags: TagDto[] = [];
   newTagEditor: any = {};
-  changeBackgroundFormGroup = this.fbBg.group({
-    id:[null],
-    colour:[''],
+  tagFilterFormGroup = this.tagFilterFB.group({
+    id: [null],
   });
+  changeBackgroundFormGroup = this.changeBGFB.group({
+    id: [null],
+    colour: [''],
+  });
+  selectedTag = "all";
   colours = ['#FFFFFF', '#FF5733', '#FFC300', '#FFFF66', '#CCFF99', '#6666FF', '#9966CC', '#999999'];
 
 
@@ -55,12 +65,26 @@ export class TodoComponent implements OnInit {
     private tagsClient: TagClient,
     private modalService: BsModalService,
     private fb: FormBuilder,
-    private fbBg: FormBuilder,
+    private changeBGFB: FormBuilder,
+    private tagFilterFB: FormBuilder,
     private authorizeService: AuthorizeService
   ) { }
 
-  ngOnInit(): void {
+   ngOnInit(): void {
+    //MY ADDED CODE
+    let isUserAuthenticated = false;
     this.isAuthenticated = this.authorizeService.isAuthenticated();
+     this.isAuthenticated.subscribe(s => {
+       if (!s) {
+         document.addEventListener('keydown', (ev) => {
+           if (ev.ctrlKey && ev.key == 'k') {
+             ev.preventDefault();
+             this.showMostUsedTagsModal();
+           }
+         });
+       }
+    });
+ 
 
     this.listsClient.get().subscribe(
       result => {
@@ -68,6 +92,7 @@ export class TodoComponent implements OnInit {
         this.priorityLevels = result.priorityLevels;
         if (this.lists.length) {
           this.selectedList = this.lists[0];
+          this.getUniqeTags(this.selectedList);
         }
       },
       error => console.error(error)
@@ -160,10 +185,26 @@ export class TodoComponent implements OnInit {
 
     this.itemDetailsModalRef = this.modalService.show(template);
     this.itemDetailsModalRef.onHidden.subscribe(() => {
-        this.stopDeleteCountDown();
+      this.stopDeleteCountDown();
     });
   }
-  //My Methods
+  //MY METHODS
+
+  //Select current list
+  selectList(list: TodoListDto) {
+    this.selectedList = list;
+    this.getUniqeTags(list);
+
+  }
+  //Get Unique Tags
+  getUniqeTags(list: TodoListDto) {
+    this.tagsClient.getUniqueTags(list.id).subscribe(
+      result => {
+        this.uniqueListTags = result;
+      },
+      error => console.error(error)
+    );
+  }
   updateItemBackground(itemDTO: TodoItemDto): void {
     this.changeBackgroundFormGroup.get('id').setValue(itemDTO.id);
     const item = new UpdateBackgroundTodoItemCommand(this.changeBackgroundFormGroup.value);
@@ -172,8 +213,15 @@ export class TodoComponent implements OnInit {
     }, error => alert(error));
   }
   //Show the add tag modal
+  showMostUsedTagsModal(): void {
+    this.tagsClient.getMostUsedTags().subscribe(success => {
+      this.mostUsedTags = success;
+    }, errorResponse => {
+
+    });
+    this.mostUsedTagsModalRef = this.modalService.show(this.addTagModalTemplate);
+  }
   showAddTagModal(template: TemplateRef<any>, item: TodoItemDto): void {
-    console.log(item);
     this.selectedItem = item;
     this.addTagModalRef = this.modalService.show(template);
     this.addTagModalRef.onHidden.subscribe(() => {
@@ -188,20 +236,27 @@ export class TodoComponent implements OnInit {
       name: this.newTagEditor.name,
     } as TagDto;
 
-    this.tagsClient.create(tag as CreateTodoItemTagCommand).subscribe(
+    this.tagsClient.create(tag as CreateTagCommand).subscribe(
       result => {
         tag.id = result;
+        this.uniqueListTags.push(new TagBriefDto({ id: tag.id, name: tag.name }));
         this.selectedItem.tags.push(tag);
         this.addTagModalRef.hide();
         this.newTagEditor = {};
       },
-      error => {
-        const errors = JSON.parse(error.response);
+      response => {
+        const responseStr = JSON.stringify(response);
+        const parseResponse = JSON.parse(responseStr);
+        const actualResponse = JSON.stringify(parseResponse.response);
+        const secondParse = JSON.parse(actualResponse);
+        const secondStringify = JSON.stringify(secondParse);
+        const thirdParse = JSON.parse(secondStringify);
+        const finalParse = JSON.parse(thirdParse);
+        const errors = finalParse.errors;
 
-        if (errors && errors.Title) {
-          this.newTagEditor.error = errors.Title[0];
+        if (errors) {
+          this.newTagEditor.error = errors.Name[0];
         }
-
         setTimeout(() => document.getElementById('tagName').focus(), 250);
       }
     );
@@ -211,6 +266,14 @@ export class TodoComponent implements OnInit {
   deleteTag(tagId: number, item: TodoItemDto): void {
     this.tagsClient.delete(tagId).subscribe(() => {
       item.tags = item.tags.filter(t => t.id != tagId);
+    }, error => alert(error));
+  }
+  //Filter the tag
+  filterTag(): void {
+    console.log(this.selectedTag);
+    this.itemsClient.filterTodoItemsByTag(this.selectedTag, this.selectedList.id).subscribe(result => {
+      console.log(result);
+      this.selectedList.items = result;
     }, error => alert(error));
   }
   //End of My Methods

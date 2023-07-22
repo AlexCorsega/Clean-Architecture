@@ -1,10 +1,23 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Todo_App.Application.TodoLists.Queries.GetTodos;
 using Todo_App.Application.TodoTags.Commands.CreateTag;
 using Todo_App.Application.TodoTags.Commands.DeleteTag;
+using Todo_App.Application.TodoTags.Queries.GetMostUsedTags;
+using Todo_App.Application.TodoTags.Queries.GetUniqueTags;
 
 namespace Todo_App.WebUI.Controllers;
 public class TagController : ApiControllerBase
 {
+    [HttpGet]
+    public async Task<ActionResult<List<TagBriefDto>>> GetUniqueTags([FromQuery]GetUniqueTagsQuery query)
+    {
+        return await Mediator.Send(query);
+    }
+    [HttpGet("[action]")]
+    public async Task<ActionResult<List<TagBriefDto>>> GetMostUsedTags()
+    {
+        return await Mediator.Send(new GetMostUsedTagsQuery());
+    }
     [HttpPost]
     public async Task<ActionResult<int>> Create(CreateTagCommand command)
     {

@@ -1,9 +1,10 @@
 ﻿using FluentValidation;
+using Todo_App.Application.Common.Interfaces;
 
 namespace Todo_App.Application.TodoTags.Commands.CreateTag;
 public class CreateTodoItemTagCommandValidator : AbstractValidator<CreateTagCommand>
 {
-    public CreateTodoItemTagCommandValidator()
+    public CreateTodoItemTagCommandValidator( )
     {
         RuleFor(p => p.Name)
             .NotEmpty()
