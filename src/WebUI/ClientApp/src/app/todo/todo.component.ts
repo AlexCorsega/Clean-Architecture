@@ -75,19 +75,20 @@ export class TodoComponent implements OnInit {
     let isUserAuthenticated = false;
     this.isAuthenticated = this.authorizeService.isAuthenticated();
      this.isAuthenticated.subscribe(s => {
-       if (!s) {
-         document.addEventListener('keydown', (ev) => {
-           if (ev.ctrlKey && ev.key == 'k') {
-             ev.preventDefault();
-             this.showMostUsedTagsModal();
-           }
-         });
-       }
+       isUserAuthenticated = s;
+      
     });
- 
 
-    this.listsClient.get().subscribe(
-      result => {
+     this.listsClient.get().subscribe(
+       result => {
+         if (isUserAuthenticated) {
+           document.addEventListener('keydown', (ev) => {
+             if (ev.ctrlKey && ev.key == 'k') {
+               ev.preventDefault();
+               this.showMostUsedTagsModal();
+             }
+           });
+         }
         this.lists = result.lists;
         this.priorityLevels = result.priorityLevels;
         if (this.lists.length) {
@@ -239,7 +240,8 @@ export class TodoComponent implements OnInit {
     this.tagsClient.create(tag as CreateTagCommand).subscribe(
       result => {
         tag.id = result;
-        this.uniqueListTags.push(new TagBriefDto({ id: tag.id, name: tag.name }));
+        const uniqueListToAdd = new TagBriefDto({ id: tag.id, name: tag.name })
+        { this.uniqueListTags.filter(t => t.name == tag.name).length == 0 && this.uniqueListTags.push(tag); }
         this.selectedItem.tags.push(tag);
         this.addTagModalRef.hide();
         this.newTagEditor = {};
