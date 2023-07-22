@@ -1,7 +1,7 @@
 <h1>Todo</h1>
 
 <p>This is a complex todo list component.</p>
-
+<a *ngIf="(isAuthenticated | async) !== true" class="fs-3" [routerLink]='["/authentication/login"]'>Login First to see features</a>
 <p *ngIf="!lists"><em>Loading...</em></p>
 
 <div *ngIf="lists">
