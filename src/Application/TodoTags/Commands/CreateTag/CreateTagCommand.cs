@@ -10,7 +10,7 @@ using Todo_App.Domain.Events;
 using ValidationException = Todo_App.Application.Common.Exceptions.ValidationException;
 
 namespace Todo_App.Application.TodoTags.Commands.CreateTag;
-//[Authorize]
+[Authorize]
 public record CreateTagCommand(int TodoItemId, string Name) : IRequest<int>;
 public class CreateTagCommandHandler : IRequestHandler<CreateTagCommand, int>
 {

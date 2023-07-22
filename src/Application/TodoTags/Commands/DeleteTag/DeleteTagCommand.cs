@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Todo_App.Application.Common.Exceptions;
 using Todo_App.Application.Common.Interfaces;
+using Todo_App.Application.Common.Security;
 using Todo_App.Domain.Entities;
 
 namespace Todo_App.Application.TodoTags.Commands.DeleteTag;
+[Authorize]
 public record DeleteTagCommand(int Id) : IRequest;
 class DeleteTagCommandHandler : IRequestHandler<DeleteTagCommand>
 {

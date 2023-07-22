@@ -3,8 +3,10 @@ using AutoMapper.QueryableExtensions;
 using MediatR;
 using Todo_App.Application.Common.Interfaces;
 using Todo_App.Application.Common.Mappings;
+using Todo_App.Application.Common.Security;
 
 namespace Todo_App.Application.TodoTags.Queries.GetUniqueTags;
+[Authorize]
 public record GetUniqueTagsQuery(int TodoListId) : IRequest<List<TagBriefDto>>;
 public class GetUniqueTagsQueryHandler : IRequestHandler<GetUniqueTagsQuery, List<TagBriefDto>>
 {
