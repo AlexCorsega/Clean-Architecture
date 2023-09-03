@@ -1,3 +1,6 @@
+## Each feature are on different branches
+
+
 ## Feature 1
 - Users can change the background color for each Todo item.
 
@@ -12,4 +15,3 @@
 - Deleted items should not be deleted from the database
 - Deleted items should not be shown on the UI or included in any query
 
-## Each feature are on different branches
